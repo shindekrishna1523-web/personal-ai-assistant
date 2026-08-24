@@ -1,0 +1,126 @@
+﻿"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+
+const API_URL = "http://192.168.1.147:5268";
+
+export default function LoginPage() {
+  const [isRegister, setIsRegister] = useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  async function submit() {
+    setError("");
+    if (!email || !password || (isRegister && !name)) {
+      setError("Saari fields bharo.");
+      return;
+    }
+    setLoading(true);
+
+    const endpoint = isRegister ? "/api/auth/register" : "/api/auth/login";
+    const body = isRegister ? { name, email, password } : { email, password };
+
+    try {
+      const res = await fetch(`${API_URL}${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Kuch galat ho gaya.");
+        return;
+      }
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("name", data.name);
+      router.push("/");
+    } catch {
+      setError("Backend se connect nahi ho paya.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Enter") submit();
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 px-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-500 text-white text-2xl font-bold mb-4 shadow-lg shadow-indigo-500/30">
+            A
+          </div>
+          <h1 className="text-2xl font-semibold text-white tracking-tight">
+            Personal AI Assistant
+          </h1>
+          <p className="text-slate-400 mt-1 text-sm">
+            {isRegister ? "Naya account banao" : "Wapas aane par swagat hai"}
+          </p>
+        </div>
+
+        <div className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-2xl p-6 shadow-2xl">
+          {isRegister && (
+            <input
+              type="text"
+              placeholder="Naam"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="w-full bg-slate-900/60 border border-slate-700 rounded-xl px-4 py-3 mb-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            />
+          )}
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className="w-full bg-slate-900/60 border border-slate-700 rounded-xl px-4 py-3 mb-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className="w-full bg-slate-900/60 border border-slate-700 rounded-xl px-4 py-3 mb-4 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
+
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/30 text-red-300 text-sm rounded-lg px-3 py-2 mb-4">
+              {error}
+            </div>
+          )}
+
+          <button
+            onClick={submit}
+            disabled={loading}
+            className="w-full bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl px-4 py-3 font-medium transition disabled:opacity-50"
+          >
+            {loading ? "Ek pal..." : isRegister ? "Register" : "Login"}
+          </button>
+
+          <button
+            onClick={() => {
+              setIsRegister(!isRegister);
+              setError("");
+            }}
+            className="w-full text-slate-400 hover:text-indigo-400 mt-4 text-sm transition"
+          >
+            {isRegister
+              ? "Pehle se account hai? Login karo"
+              : "Naya account chahiye? Register karo"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
