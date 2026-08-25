@@ -13,6 +13,13 @@ using PersonalAssistant.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Cloud (Linux) pe file-watching band karo (inotify limit crash fix)
+builder.Configuration.Sources.Clear();
+builder.Configuration
+    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
+    .AddEnvironmentVariables();
+builder.Environment.EnvironmentName = "Production";
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -293,6 +300,7 @@ record LaunchDto(string App);
 
 
 record RenameDto(string Title);
+
 
 
 
