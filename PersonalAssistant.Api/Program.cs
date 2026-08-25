@@ -88,8 +88,12 @@ app.UseAuthorization();
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
-app.MapPost("/api/auth/register", async (RegisterDto dto, IAuthService auth, CancellationToken ct) =>
+app.MapPost("/api/auth/register", async (RegisterDto dto, IAuthService auth, AppDbContext db, CancellationToken ct) =>
 {
+    var userCount = await db.Users.CountAsync(ct);
+    if (userCount >= 10)
+        return Results.BadRequest(new { error = "Registration is currently full. Please try again later." });
+
     if (string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Password) || string.IsNullOrWhiteSpace(dto.Name))
         return Results.BadRequest(new { error = "Name, email aur password zaroori hai." });
 
@@ -167,8 +171,21 @@ app.MapDelete("/api/conversations/{id}", async (Guid id, AppDbContext db, Claims
 }).RequireAuthorization();
 
 // ---- CHAT STREAM (word-by-word) ----
-app.MapPost("/api/chat/stream", async (ChatRequestDto dto, IChatService chatService, ClaimsPrincipal user, HttpResponse response, CancellationToken ct) =>
+app.MapPost("/api/chat/stream", async (ChatRequestDto dto, IChatService chatService, ClaimsPrincipal user, HttpResponse response, AppDbContext db, CancellationToken ct) =>
 {
+    var userId = GetUserId(user);
+    var today = DateTime.UtcNow.Date;
+    var todayCount = await db.Messages
+        .Where(m => m.Role == "user" && m.CreatedAt >= today &&
+               db.Conversations.Any(c => c.Id == m.ConversationId && c.UserId == userId))
+        .CountAsync(ct);
+    if (todayCount >= 20)
+    {
+        response.StatusCode = 429;
+        await response.WriteAsync("Daily message limit reached (20/day). Try again tomorrow.", ct);
+        return;
+    }
+
     if (string.IsNullOrWhiteSpace(dto.Message))
     {
         response.StatusCode = 400;
@@ -179,7 +196,7 @@ app.MapPost("/api/chat/stream", async (ChatRequestDto dto, IChatService chatServ
     response.Headers.Append("Content-Type", "text/event-stream");
     response.Headers.Append("Cache-Control", "no-cache");
 
-    var userId = GetUserId(user);
+    userId = GetUserId(user);
     await foreach (var item in chatService.StreamAsync(new ChatCommand(dto.Message, dto.ConversationId, dto.ImageBase64, dto.ImageMimeType), userId, ct))
     {
         var json = System.Text.Json.JsonSerializer.Serialize(item);
@@ -300,6 +317,10 @@ record LaunchDto(string App);
 
 
 record RenameDto(string Title);
+
+
+
+
 
 
 
