@@ -119,13 +119,13 @@ export default function Home() {
 
   async function enableNotifications() {
     if (!("Notification" in window)) {
-      alert("Aapka browser notifications support nahi karta.");
+      alert("Your browser does not support notifications.");
       return;
     }
     const perm = await Notification.requestPermission();
     setNotifPerm(perm);
     if (perm === "granted") {
-      new Notification("Notifications ON!", { body: "Ab reminders yahan dikhenge." });
+      new Notification("Notifications ON!", { body: "Reminders will show here now." });
     }
   }
 
@@ -172,7 +172,7 @@ export default function Home() {
       if (res.status === 401) return logout();
       const data = await res.json();
       setAgentOutput(data.output);
-    } catch { setAgentOutput("Agent se connect nahi ho paya."); }
+    } catch { setAgentOutput("Could not connect to agent."); }
   }
 
   async function agentPort() {
@@ -183,7 +183,7 @@ export default function Home() {
       if (res.status === 401) return logout();
       const data = await res.json();
       setAgentOutput(data.output);
-    } catch { setAgentOutput("Agent se connect nahi ho paya."); }
+    } catch { setAgentOutput("Could not connect to agent."); }
   }
 
   async function agentLaunch(app: string) {
@@ -195,7 +195,7 @@ export default function Home() {
       if (res.status === 401) return logout();
       const data = await res.json();
       setAgentOutput(data.output);
-    } catch { setAgentOutput("Agent se connect nahi ho paya."); }
+    } catch { setAgentOutput("Could not connect to agent."); }
   }
 
   async function agentDisk() {
@@ -204,7 +204,7 @@ export default function Home() {
       if (res.status === 401) return logout();
       const data = await res.json();
       setAgentOutput(data.output);
-    } catch { setAgentOutput("Agent se connect nahi ho paya."); }
+    } catch { setAgentOutput("Could not connect to agent."); }
   }
 
   async function agentApps() {
@@ -213,7 +213,7 @@ export default function Home() {
       if (res.status === 401) return logout();
       const data = await res.json();
       setAgentOutput(data.output);
-    } catch { setAgentOutput("Agent se connect nahi ho paya."); }
+    } catch { setAgentOutput("Could not connect to agent."); }
   }
 
   async function loadConversations() {
@@ -273,7 +273,7 @@ export default function Home() {
 
   async function deleteConversation(id: string, e: React.MouseEvent) {
     e.stopPropagation();
-    if (!confirm("Ye chat delete karni hai?")) return;
+    if (!confirm("Delete this chat?")) return;
     try {
       const res = await fetch(`${API_URL}/api/conversations/${id}`, { method: "DELETE", headers: authHeaders() });
       if (res.status === 401) return logout();
@@ -284,7 +284,7 @@ export default function Home() {
 
   async function renameConversation(id: string, currentTitle: string, e: React.MouseEvent) {
     e.stopPropagation();
-    const newTitle = prompt("Naya naam:", currentTitle);
+    const newTitle = prompt("New name:", currentTitle);
     if (!newTitle || !newTitle.trim()) return;
     try {
       const res = await fetch(`${API_URL}/api/conversations/${id}`, {
@@ -307,7 +307,7 @@ export default function Home() {
   function toggleListening() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) { alert("Browser voice input support nahi karta. Chrome use karo."); return; }
+    if (!SR) { alert("Your browser does not support voice input. Use Chrome."); return; }
     if (listening) { recognitionRef.current?.stop(); setListening(false); return; }
     const recognition = new SR();
     recognition.lang = "hi-IN";
@@ -326,7 +326,7 @@ export default function Home() {
   }
 
   function speak(text: string, index: number) {
-    if (!window.speechSynthesis) { alert("Browser text-to-speech support nahi karta."); return; }
+    if (!window.speechSynthesis) { alert("Your browser does not support text-to-speech."); return; }
     if (speakingIndex !== null) {
       window.speechSynthesis.cancel();
       if (speakingIndex === index) { setSpeakingIndex(null); return; }
@@ -365,7 +365,7 @@ export default function Home() {
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { alert("Image 5MB se choti honi chahiye."); return; }
+    if (file.size > 5 * 1024 * 1024) { alert("Image must be smaller than 5MB."); return; }
     const reader = new FileReader();
     reader.onload = () => {
       const result = reader.result as string;
@@ -463,7 +463,7 @@ export default function Home() {
       if (items[i].type.startsWith("image/")) {
         const file = items[i].getAsFile();
         if (!file) continue;
-        if (file.size > 5 * 1024 * 1024) { alert("Image 5MB se choti honi chahiye."); return; }
+        if (file.size > 5 * 1024 * 1024) { alert("Image must be smaller than 5MB."); return; }
         const reader = new FileReader();
         reader.onload = () => {
           const result = reader.result as string;
@@ -499,7 +499,7 @@ export default function Home() {
         <div className="flex-1 overflow-y-auto px-3">
           <div className="text-xs font-medium text-slate-500 px-2 py-2 uppercase tracking-wider">History</div>
           {conversations.length === 0 && (
-            <div className="text-slate-600 text-sm px-2 py-4">Abhi koi chat nahi</div>
+            <div className="text-slate-600 text-sm px-2 py-4">No chats yet</div>
           )}
           {conversations.map((c) => (
             <div
@@ -544,13 +544,13 @@ export default function Home() {
                 onClick={enableNotifications}
                 className="w-full bg-amber-500 hover:bg-amber-600 text-white text-xs rounded-lg px-2 py-1.5 mb-2 transition"
               >
-                Notifications ON karo
+                Enable notifications
               </button>
             )}
             <input
               value={reminderText}
               onChange={(e) => setReminderText(e.target.value)}
-              placeholder="Kya yaad dilau..."
+              placeholder="What to remind you..."
               className="w-full bg-slate-800 text-sm text-white rounded-lg px-2 py-1.5 mb-1 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
             <div className="flex gap-1 mb-2">
@@ -560,11 +560,11 @@ export default function Home() {
                 onChange={(e) => setReminderMins(e.target.value)}
                 className="w-16 bg-slate-800 text-sm text-white rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               />
-              <span className="text-slate-400 text-xs self-center">min baad</span>
+              <span className="text-slate-400 text-xs self-center">min later</span>
               <button onClick={addReminder} className="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg px-2 text-sm transition">Set</button>
             </div>
             {pendingReminders.length === 0 && (
-              <div className="text-slate-600 text-xs px-1 py-2">Koi reminder nahi.</div>
+              <div className="text-slate-600 text-xs px-1 py-2">No reminders.</div>
             )}
             {pendingReminders.map((r) => (
               <div key={r.id} className="group flex items-start justify-between gap-2 text-xs text-slate-300 py-1.5 border-b border-slate-800 last:border-0">
@@ -644,13 +644,13 @@ export default function Home() {
                 value={newMemory}
                 onChange={(e) => setNewMemory(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") addMemory(); }}
-                placeholder="AI ko kya yaad rahe..."
+                placeholder="What should the AI remember..."
                 className="flex-1 bg-slate-800 text-sm text-white rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500 min-w-0"
               />
               <button onClick={addMemory} className="bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg px-3 text-sm transition">Add</button>
             </div>
             {memories.length === 0 && (
-              <div className="text-slate-600 text-xs px-1 py-2">Kuch yaad nahi. Upar add karo.</div>
+              <div className="text-slate-600 text-xs px-1 py-2">Nothing saved. Add above.</div>
             )}
             {memories.map((m) => (
               <div key={m.id} className="group flex items-start justify-between gap-2 text-xs text-slate-300 py-1.5 border-b border-slate-800 last:border-0">
@@ -699,8 +699,8 @@ export default function Home() {
             {messages.length === 0 && (
               <div className="text-center mt-24">
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-500 text-white text-2xl font-bold mb-4 shadow-lg shadow-indigo-500/20">A</div>
-                <p className="text-slate-800 text-lg font-medium">Namaste {userName}!</p>
-                <p className="text-slate-500 mt-1">Type karo, file upload karo, ya reminder set karo.</p>
+                <p className="text-slate-800 text-lg font-medium">Hello {userName}!</p>
+                <p className="text-slate-500 mt-1">Type a message, upload a file, or set a reminder.</p>
               </div>
             )}
 
@@ -793,19 +793,19 @@ export default function Home() {
             <div className="flex gap-2 items-end">
               <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".pdf,.txt,.md,.csv" className="hidden" />
               <input type="file" ref={imageInputRef} onChange={handleImageChange} accept="image/*" className="hidden" />
-              <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="border border-slate-300 rounded-xl px-4 py-3 text-slate-600 hover:bg-slate-100 transition disabled:opacity-50" title="File attach karo">
+              <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="border border-slate-300 rounded-xl px-4 py-3 text-slate-600 hover:bg-slate-100 transition disabled:opacity-50" title="Attach file">
                 {uploading ? "..." : "📎"}
               </button>
-              <button onClick={() => imageInputRef.current?.click()} className="border border-slate-300 dark:border-slate-600 rounded-xl px-4 py-3 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition" title="Image attach karo">
+              <button onClick={() => imageInputRef.current?.click()} className="border border-slate-300 dark:border-slate-600 rounded-xl px-4 py-3 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition" title="Attach image">
                 📷
               </button>
-              <button onClick={toggleListening} className={`border rounded-xl px-4 py-3 transition ${listening ? "bg-red-500 border-red-500 text-white animate-pulse" : "border-slate-300 text-slate-600 hover:bg-slate-100"}`} title="Bolke likho">🎤</button>
+              <button onClick={toggleListening} className={`border rounded-xl px-4 py-3 transition ${listening ? "bg-red-500 border-red-500 text-white animate-pulse" : "border-slate-300 text-slate-600 hover:bg-slate-100"}`} title="Speak to type">🎤</button>
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 onPaste={handlePaste}
-                placeholder={listening ? "Sun raha hoon... boliye" : "Message likho..."}
+                placeholder={listening ? "Listening... speak now" : "Type a message..."}
                 rows={1}
                 className="flex-1 resize-none rounded-xl border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-4 py-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent max-h-40"
               />
@@ -823,6 +823,8 @@ export default function Home() {
     </div>
   );
 }
+
+
 
 
 

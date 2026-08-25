@@ -33,14 +33,14 @@ export default function LoginPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Kuch galat ho gaya.");
+        setError(data.error || "Something went wrong. Please try again.");
         return;
       }
       localStorage.setItem("token", data.token);
       localStorage.setItem("name", data.name);
       router.push("/");
     } catch {
-      setError("Backend se connect nahi ho paya.");
+      setError("Could not connect to the server.");
     } finally {
       setLoading(false);
     }
@@ -61,7 +61,7 @@ export default function LoginPage() {
             Personal AI Assistant
           </h1>
           <p className="text-slate-400 mt-1 text-sm">
-            {isRegister ? "Naya account banao" : "Wapas aane par swagat hai"}
+            {isRegister ? "Naya account banao" : "Welcome back"}
           </p>
         </div>
 
@@ -69,7 +69,7 @@ export default function LoginPage() {
           {isRegister && (
             <input
               type="text"
-              placeholder="Naam"
+              placeholder="Name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -115,13 +115,15 @@ export default function LoginPage() {
             className="w-full text-slate-400 hover:text-indigo-400 mt-4 text-sm transition"
           >
             {isRegister
-              ? "Pehle se account hai? Login karo"
-              : "Naya account chahiye? Register karo"}
+              ? "Already have an account? Login"
+              : "Need an account? Register"}
           </button>
         </div>
       </div>
     </div>
   );
 }
+
+
 
 
