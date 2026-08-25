@@ -7,7 +7,7 @@ import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 
-const API_URL = "http://192.168.1.147:5268";
+const API_URL = "https://personal-ai-assistant-2nno.onrender.com";
 
 type Message = { role: "user" | "assistant"; content: string; time?: string };
 type ConversationSummary = { id: string; title: string; updatedAt: string };
@@ -823,6 +823,7 @@ export default function Home() {
     </div>
   );
 }
+
 
 
 

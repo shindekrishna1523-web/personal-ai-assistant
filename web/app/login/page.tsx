@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-const API_URL = "http://192.168.1.147:5268";
+const API_URL = "https://personal-ai-assistant-2nno.onrender.com";
 
 export default function LoginPage() {
   const [isRegister, setIsRegister] = useState(false);
@@ -123,4 +123,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
 
