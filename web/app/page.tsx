@@ -721,7 +721,7 @@ export default function Home() {
               <div className="text-center mt-24">
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-500 text-white text-2xl font-bold mb-4 shadow-lg shadow-indigo-500/20">A</div>
                 <p className="text-slate-800 text-lg font-medium">Hello {userName}!</p>
-                <p className="text-slate-500 mt-1">Type a message, upload a file, or set a reminder.</p>
+                <p className="text-slate-500 mt-1 px-4 text-sm sm:text-base break-words">Type a message, upload a file, or set a reminder.</p>
               </div>
             )}
 
@@ -811,7 +811,7 @@ export default function Home() {
                 <button onClick={() => setAttachedImage(null)} className="text-indigo-400 hover:text-red-500">x</button>
               </div>
             )}
-            <div className="flex gap-1.5 sm:gap-2 items-end min-w-0">
+            <div className="grid grid-cols-[auto_auto_auto_1fr_auto] sm:flex gap-1.5 sm:gap-2 items-end min-w-0">
               <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".pdf,.txt,.md,.csv" className="hidden" />
               <input type="file" ref={imageInputRef} onChange={handleImageChange} accept="image/*" className="hidden" />
               <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="border border-slate-300 rounded-xl px-3 sm:px-4 py-3 text-slate-600 hover:bg-slate-100 transition disabled:opacity-50 shrink-0" title="Attach file">
@@ -844,6 +844,9 @@ export default function Home() {
     </div>
   );
 }
+
+
+
 
 
 
