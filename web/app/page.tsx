@@ -43,7 +43,7 @@ export default function Home() {
   const [speakingIndex, setSpeakingIndex] = useState<number | null>(null);
   const [showReminders, setShowReminders] = useState(false);
   const [showAgent, setShowAgent] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dark, setDark] = useState(false);
   const [agentOutput, setAgentOutput] = useState("");
   const [portInput, setPortInput] = useState("5268");
@@ -485,11 +485,32 @@ export default function Home() {
   const pendingReminders = reminders.filter((r) => !r.done);
 
   return (
-    <div className="flex h-screen bg-slate-100">
-      <aside className={`${sidebarOpen ? "w-72" : "w-0"} bg-slate-950 text-slate-100 flex flex-col overflow-hidden transition-all duration-300 shrink-0`}>
+    <div className="flex h-[100dvh] overflow-hidden bg-slate-100">
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      <aside
+        className={`
+          fixed md:relative
+          inset-y-0 left-0
+          z-50
+          w-72
+          bg-slate-950
+          text-slate-100
+          flex flex-col
+          overflow-hidden
+          shrink-0
+          transition-transform duration-300
+          ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
+          md:translate-x-0
+        `}
+      >
         <div className="p-4">
           <button
-            onClick={newChat}
+            onClick={() => { newChat(); if (window.innerWidth < 768) setSidebarOpen(false); }}
             className="w-full flex items-center justify-center gap-2 bg-indigo-500 hover:bg-indigo-600 rounded-xl px-4 py-2.5 font-medium transition"
           >
             <span className="text-lg leading-none">+</span> New Chat
@@ -504,7 +525,7 @@ export default function Home() {
           {conversations.map((c) => (
             <div
               key={c.id}
-              onClick={() => openConversation(c.id)}
+              onClick={() => { openConversation(c.id); if (window.innerWidth < 768) setSidebarOpen(false); }}
               className={`group flex items-center justify-between rounded-lg px-3 py-2.5 mb-1 text-sm cursor-pointer transition ${
                 c.id === conversationId ? "bg-slate-800 text-white" : "text-slate-300 hover:bg-slate-900"
               }`}
@@ -673,7 +694,7 @@ export default function Home() {
       </aside>
 
       <div className="flex-1 flex flex-col bg-slate-100 dark:bg-slate-900">
-        <header className="bg-white/80 dark:bg-slate-800/80 backdrop-blur border-b border-slate-200 dark:border-slate-700 px-6 py-4 flex items-center gap-3">
+        <header className="bg-white/80 dark:bg-slate-800/80 backdrop-blur border-b border-slate-200 dark:border-slate-700 px-3 sm:px-6 py-3 sm:py-4 flex items-center gap-2 sm:gap-3 shrink-0">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg p-1.5 transition"
@@ -694,8 +715,8 @@ export default function Home() {
           </button>
         </header>
 
-        <main className="flex-1 overflow-y-auto px-4 py-8">
-          <div className="max-w-3xl mx-auto space-y-6">
+        <main className="flex-1 min-w-0 overflow-y-auto px-3 sm:px-4 py-5 sm:py-8">
+          <div className="w-full max-w-3xl mx-auto space-y-4 sm:space-y-6">
             {messages.length === 0 && (
               <div className="text-center mt-24">
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-500 text-white text-2xl font-bold mb-4 shadow-lg shadow-indigo-500/20">A</div>
@@ -705,13 +726,13 @@ export default function Home() {
             )}
 
             {messages.map((msg, i) => (
-              <div key={i} className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
+              <div key={i} className={`flex gap-2 sm:gap-3 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 ${
                   msg.role === "user" ? "bg-indigo-500 text-white" : "bg-slate-800 text-white"
                 }`}>
                   {msg.role === "user" ? initial : "A"}
                 </div>
-                <div className={`flex flex-col max-w-[75%] ${msg.role === "user" ? "items-end" : "items-start"}`}>
+                <div className={`flex flex-col max-w-[88%] sm:max-w-[75%] min-w-0 ${msg.role === "user" ? "items-end" : "items-start"}`}>
                   <div className={`rounded-2xl px-4 py-3 leading-relaxed ${
                     msg.role === "user"
                       ? "bg-indigo-500 text-white rounded-tr-sm whitespace-pre-wrap"
@@ -775,7 +796,7 @@ export default function Home() {
           </div>
         </main>
 
-        <footer className="bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 px-4 py-4">
+        <footer className="bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 px-2 sm:px-4 py-2 sm:py-4">
           <div className="max-w-3xl mx-auto">
             {attachedFile && (
               <div className="flex items-center gap-2 mb-2 bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2 text-sm text-indigo-700 w-fit">
@@ -790,10 +811,10 @@ export default function Home() {
                 <button onClick={() => setAttachedImage(null)} className="text-indigo-400 hover:text-red-500">x</button>
               </div>
             )}
-            <div className="flex gap-2 items-end">
+            <div className="flex gap-1.5 sm:gap-2 items-end min-w-0">
               <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".pdf,.txt,.md,.csv" className="hidden" />
               <input type="file" ref={imageInputRef} onChange={handleImageChange} accept="image/*" className="hidden" />
-              <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="border border-slate-300 rounded-xl px-4 py-3 text-slate-600 hover:bg-slate-100 transition disabled:opacity-50" title="Attach file">
+              <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="border border-slate-300 rounded-xl px-3 sm:px-4 py-3 text-slate-600 hover:bg-slate-100 transition disabled:opacity-50 shrink-0" title="Attach file">
                 {uploading ? "..." : "📎"}
               </button>
               <button onClick={() => imageInputRef.current?.click()} className="border border-slate-300 dark:border-slate-600 rounded-xl px-4 py-3 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition" title="Attach image">
@@ -807,12 +828,12 @@ export default function Home() {
                 onPaste={handlePaste}
                 placeholder={listening ? "Listening... speak now" : "Type a message..."}
                 rows={1}
-                className="flex-1 resize-none rounded-xl border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-4 py-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent max-h-40"
+                className="flex-1 min-w-0 resize-none rounded-xl border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-4 py-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent max-h-40"
               />
               <button
                 onClick={sendMessage}
-                disabled={loading || (!input.trim() && !attachedFile)}
-                className="bg-indigo-500 text-white rounded-xl px-6 py-3 font-medium hover:bg-indigo-600 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                disabled={loading || (!input.trim() && !attachedFile && !attachedImage)}
+                className="bg-indigo-500 text-white rounded-xl px-4 sm:px-6 py-3 font-medium hover:bg-indigo-600 transition disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
               >
                 Send
               </button>
@@ -823,6 +844,7 @@ export default function Home() {
     </div>
   );
 }
+
 
 
 
