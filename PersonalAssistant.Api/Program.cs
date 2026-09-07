@@ -1,4 +1,4 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +17,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.Sources.Clear();
 builder.Configuration
     .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
+    .AddUserSecrets<Program>(optional: true)
     .AddEnvironmentVariables();
 builder.Environment.EnvironmentName = "Production";
 
@@ -317,6 +318,7 @@ record LaunchDto(string App);
 
 
 record RenameDto(string Title);
+
 
 
 

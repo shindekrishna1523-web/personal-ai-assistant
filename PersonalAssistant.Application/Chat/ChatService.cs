@@ -7,13 +7,25 @@ using PersonalAssistant.Infrastructure.Data;
 
 namespace PersonalAssistant.Application.Chat;
 
-public record ChatCommand(string Message, string? ConversationId, string? ImageBase64 = null, string? ImageMimeType = null);
+public record ChatCommand(
+    string Message,
+    string? ConversationId,
+    string? ImageBase64 = null,
+    string? ImageMimeType = null);
+
 public record ChatResult(string Reply, string Model, string ConversationId);
 
 public interface IChatService
 {
-    Task<ChatResult> HandleAsync(ChatCommand command, Guid userId, CancellationToken cancellationToken);
-    IAsyncEnumerable<object> StreamAsync(ChatCommand command, Guid userId, CancellationToken cancellationToken);
+    Task<ChatResult> HandleAsync(
+        ChatCommand command,
+        Guid userId,
+        CancellationToken cancellationToken);
+
+    IAsyncEnumerable<object> StreamAsync(
+        ChatCommand command,
+        Guid userId,
+        CancellationToken cancellationToken);
 }
 
 public class ChatService : IChatService
@@ -27,11 +39,19 @@ public class ChatService : IChatService
         _db = db;
     }
 
-    private async Task<string> BuildSystemPromptAsync(Guid userId, CancellationToken ct)
+    private async Task<string> BuildSystemPromptAsync(
+        Guid userId,
+        CancellationToken ct)
     {
-        var basePrompt = "You are a helpful personal assistant and an expert software developer. Reply in the same language the user uses. When writing code, always use proper markdown code blocks with the correct language tag (like ```python or ```csharp). Explain code clearly and concisely. When the user shares an error, identify the root cause and give a step-by-step fix.";
+        const string basePrompt =
+            "You are a helpful personal assistant and an expert software developer. " +
+            "Reply in the same language the user uses. " +
+            "When writing code, always use proper markdown code blocks with the correct language tag. " +
+            "Explain code clearly and concisely. " +
+            "When the user shares an error, identify the root cause and give a step-by-step fix.";
 
         var memories = await _db.Memories
+            .AsNoTracking()
             .Where(m => m.UserId == userId)
             .OrderBy(m => m.CreatedAt)
             .Select(m => m.Content)
@@ -42,14 +62,17 @@ public class ChatService : IChatService
 
         var sb = new StringBuilder(basePrompt);
         sb.Append("\n\nHere are some things you remember about the user:\n");
-        foreach (var mem in memories)
-            sb.Append("- ").Append(mem).Append('\n');
+
+        foreach (var memory in memories)
+            sb.Append("- ").Append(memory).Append('\n');
 
         return sb.ToString();
     }
 
     private async Task<(Conversation conv, List<AiMessage> history, bool isNew)> PrepareAsync(
-        ChatCommand command, Guid userId, CancellationToken ct)
+        ChatCommand command,
+        Guid userId,
+        CancellationToken ct)
     {
         Conversation conversation;
         bool isNew = false;
@@ -58,9 +81,19 @@ public class ChatService : IChatService
             Guid.TryParse(command.ConversationId, out var convId))
         {
             var existing = await _db.Conversations
-                .FirstOrDefaultAsync(c => c.Id == convId && c.UserId == userId, ct);
-            if (existing is null) { conversation = CreateConversation(userId, command.Message); isNew = true; }
-            else { conversation = existing; }
+                .FirstOrDefaultAsync(
+                    c => c.Id == convId && c.UserId == userId,
+                    ct);
+
+            if (existing is null)
+            {
+                conversation = CreateConversation(userId, command.Message);
+                isNew = true;
+            }
+            else
+            {
+                conversation = existing;
+            }
         }
         else
         {
@@ -68,104 +101,174 @@ public class ChatService : IChatService
             isNew = true;
         }
 
-        if (isNew) _db.Conversations.Add(conversation);
+        if (isNew)
+            _db.Conversations.Add(conversation);
 
         var history = new List<AiMessage>();
+
         if (!isNew)
         {
-            history = await _db.Messages
-                .Where(m => m.ConversationId == conversation.Id)
-                .OrderBy(m => m.CreatedAt)
-                .Select(m => new AiMessage { Role = m.Role, Content = m.Content })
-                .ToListAsync(ct);
+           history = await _db.Messages
+    .AsNoTracking()
+    .Where(m => m.ConversationId == conversation.Id)
+    .OrderByDescending(m => m.CreatedAt)
+    .Take(20)
+    .OrderByDescending(m => m.CreatedAt)
+.Take(20)
+.OrderBy(m => m.CreatedAt)
+    .Select(m => new AiMessage
+    {
+        Role = m.Role,
+        Content = m.Content
+    })
+    .ToListAsync(ct);
         }
 
         return (conversation, history, isNew);
     }
 
-    public async Task<ChatResult> HandleAsync(ChatCommand command, Guid userId, CancellationToken ct)
+    public async Task<ChatResult> HandleAsync(
+        ChatCommand command,
+        Guid userId,
+        CancellationToken ct)
     {
-        var (conversation, history, _) = await PrepareAsync(command, userId, ct);
+        var (conversation, history, _) =
+            await PrepareAsync(command, userId, ct);
+
+        var systemPrompt =
+            await BuildSystemPromptAsync(userId, ct);
 
         _db.Messages.Add(new Message
         {
-            Id = Guid.NewGuid(), ConversationId = conversation.Id,
-            Role = "user", Content = command.Message, CreatedAt = DateTime.UtcNow
+            Id = Guid.NewGuid(),
+            ConversationId = conversation.Id,
+            Role = "user",
+            Content = command.Message,
+            CreatedAt = DateTime.UtcNow
         });
 
         var request = new AiRequest
         {
             Message = command.Message,
             ConversationId = conversation.Id.ToString(),
-            SystemPrompt = await BuildSystemPromptAsync(userId, ct),
+            SystemPrompt = systemPrompt,
             History = history,
             ImageBase64 = command.ImageBase64,
             ImageMimeType = command.ImageMimeType
         };
-        var response = await _aiService.GetResponseAsync(request, ct);
+
+        var response =
+            await _aiService.GetResponseAsync(request, ct);
 
         _db.Messages.Add(new Message
         {
-            Id = Guid.NewGuid(), ConversationId = conversation.Id,
-            Role = "assistant", Content = response.Content, CreatedAt = DateTime.UtcNow
+            Id = Guid.NewGuid(),
+            ConversationId = conversation.Id,
+            Role = "assistant",
+            Content = response.Content,
+            CreatedAt = DateTime.UtcNow
         });
+
         conversation.UpdatedAt = DateTime.UtcNow;
+
         await _db.SaveChangesAsync(ct);
 
-        return new ChatResult(response.Content, response.Model, conversation.Id.ToString());
+        return new ChatResult(
+            response.Content,
+            response.Model,
+            conversation.Id.ToString());
     }
 
     public async IAsyncEnumerable<object> StreamAsync(
-        ChatCommand command, Guid userId, [EnumeratorCancellation] CancellationToken ct)
+        ChatCommand command,
+        Guid userId,
+        [EnumeratorCancellation] CancellationToken ct)
     {
-        var (conversation, history, _) = await PrepareAsync(command, userId, ct);
+        var (conversation, history, _) =
+            await PrepareAsync(command, userId, ct);
 
-        yield return new { type = "meta", conversationId = conversation.Id.ToString() };
-
-        _db.Messages.Add(new Message
+        // Send conversation ID immediately.
+        yield return new
         {
-            Id = Guid.NewGuid(), ConversationId = conversation.Id,
-            Role = "user", Content = command.Message, CreatedAt = DateTime.UtcNow
-        });
-        await _db.SaveChangesAsync(ct);
+            type = "meta",
+            conversationId = conversation.Id.ToString()
+        };
+
+        // Build prompt before starting Gemini.
+        var systemPrompt =
+            await BuildSystemPromptAsync(userId, ct);
 
         var request = new AiRequest
         {
             Message = command.Message,
             ConversationId = conversation.Id.ToString(),
-            SystemPrompt = await BuildSystemPromptAsync(userId, ct),
+            SystemPrompt = systemPrompt,
             History = history,
             ImageBase64 = command.ImageBase64,
             ImageMimeType = command.ImageMimeType
         };
 
+        // Start Gemini streaming immediately.
         var full = new StringBuilder();
+
         await foreach (var chunk in _aiService.StreamResponseAsync(request, ct))
         {
+            if (string.IsNullOrEmpty(chunk))
+                continue;
+
             full.Append(chunk);
-            yield return new { type = "chunk", text = chunk };
+
+            yield return new
+            {
+                type = "chunk",
+                text = chunk
+            };
         }
+
+        // Save user + assistant messages after AI streaming.
+        _db.Messages.Add(new Message
+        {
+            Id = Guid.NewGuid(),
+            ConversationId = conversation.Id,
+            Role = "user",
+            Content = command.Message,
+            CreatedAt = DateTime.UtcNow
+        });
 
         _db.Messages.Add(new Message
         {
-            Id = Guid.NewGuid(), ConversationId = conversation.Id,
-            Role = "assistant", Content = full.ToString(), CreatedAt = DateTime.UtcNow
+            Id = Guid.NewGuid(),
+            ConversationId = conversation.Id,
+            Role = "assistant",
+            Content = full.ToString(),
+            CreatedAt = DateTime.UtcNow
         });
+
         conversation.UpdatedAt = DateTime.UtcNow;
+
         await _db.SaveChangesAsync(ct);
 
-        yield return new { type = "done" };
+        yield return new
+        {
+            type = "done"
+        };
     }
 
-    private static Conversation CreateConversation(Guid userId, string firstMessage)
+    private static Conversation CreateConversation(
+        Guid userId,
+        string firstMessage)
     {
-        var title = firstMessage.Length > 40 ? firstMessage.Substring(0, 40) : firstMessage;
+        var title = firstMessage.Length > 40
+            ? firstMessage.Substring(0, 40)
+            : firstMessage;
+
         return new Conversation
         {
-            Id = Guid.NewGuid(), UserId = userId, Title = title,
-            CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            Title = title,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
         };
     }
 }
-
-
